@@ -1,15 +1,25 @@
 import streamlit as st
 import joblib
-import textract
-import tempfile
 import nltk
 from PyPDF2 import PdfReader
+from docx import Document
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 import re
 import os
-nltk.download('punkt')
-nltk.download('stopwords')
+# Download only if not present
+nltk.download('punkt', quiet=True)
+nltk.download('stopwords', quiet=True)
+
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+
+try:
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords')
 
 # Text preprocessing function   
 stop_words = set(stopwords.words("english"))
@@ -66,9 +76,11 @@ def extract_details(text):
 # Function to extract text from uploaded resume
 def extract_text_from_file(uploaded_file):
     ext = os.path.splitext(uploaded_file.name)[-1].lower()
+    
     if ext not in ['.pdf', '.docx']:
         st.error("Unsupported file format! Please upload PDF or DOCX files.")
         return None
+
     try:
         if ext == '.pdf':
             pdf_reader = PdfReader(uploaded_file)
@@ -77,13 +89,13 @@ def extract_text_from_file(uploaded_file):
                 text += page.extract_text() + "\n"
             return text
         
-        # For docx or doc use textract
-        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp_file:
-            tmp_file.write(uploaded_file.getbuffer())
-            tmp_file_path = tmp_file.name
-        
-        text = textract.process(tmp_file_path, encoding='utf-8').decode('utf-8', errors='ignore')
-        return text
+        elif ext == '.docx':
+            doc = Document(uploaded_file)
+            text = ""
+            for para in doc.paragraphs:
+                text += para.text + "\n"
+            return text
+
     except Exception as e:
         st.error(f"Error extracting text: {e}")
         return None
