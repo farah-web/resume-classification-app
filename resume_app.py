@@ -8,13 +8,7 @@ from nltk.stem import PorterStemmer
 import re
 import os
 # Download only if not present
-nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
-
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
 
 try:
     nltk.data.find('corpora/stopwords')
@@ -31,10 +25,9 @@ def transform_text(text):
     
     text = text.lower()
     text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
-    tokens = nltk.word_tokenize(text)
+    tokens = re.findall(r'\b\w+\b', text)
     filtered = [ps.stem(word) for word in tokens if word.isalnum() and word not in stop_words]
     return " ".join(filtered)
-
 
 # Load the saved model (Pipeline: Preprocessing → TF-IDF → LinearSVC)
 model = joblib.load("the_resume_classifier.pkl")
